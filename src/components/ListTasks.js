@@ -69,12 +69,12 @@ const Section = ({ status, tasks, setTasks, todos, inProgress, closed }) => {
     setTasks((prev) => {
       const mTasks = prev.map(t => {
         if (t.id === id) {
-          return {...t, status: status }
+          return { ...t, status: status }
         }
         return t;
       })
       localStorage.setItem("tasks", JSON.stringify(mTasks))
-      toast("Task status changed", {icon:<FcLikePlaceholder/>})
+      toast("Task status changed", { icon: <FcLikePlaceholder /> })
       return mTasks;
     })
   };
@@ -83,12 +83,15 @@ const Section = ({ status, tasks, setTasks, todos, inProgress, closed }) => {
     <div className={`w-64 p-2 ${isOver ? "bg-gray-500 bg-opacity-25 rounded-md transition-all ease-in-out " : ""}`} ref={drop}>
       <Header text={text} bg={bg} count={tasksToMap.length} />
       {tasksToMap.length > 0 &&
-        tasksToMap.map((task) => (
+        tasksToMap.map((task, index) => (
           <Task
-            key={task.id} // استفاده صحیح از کلید
+            key={task.id}
             tasks={tasks}
             setTasks={setTasks}
             task={task}
+            index={index}
+            status={status}
+            bg={bg}
           />
         ))}
     </div>
@@ -106,26 +109,68 @@ const Header = ({ text, bg, count }) => {
   );
 }
 
-const Task = ({ task, tasks, setTasks }) => {
+const Task = ({ task, tasks, setTasks, index, status, bg }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
-    item: { id: task.id },
+    item: { id: task.id, index, status },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }));
 
+
+  const [{ isOver }, drop] = useDrop({
+    accept: "task",
+    hover: (draggedItem) => {
+      if (draggedItem.id !== task.id) {
+        moveTask(draggedItem.index, index, draggedItem.status, status);
+        draggedItem.index = index;
+      }
+    },
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  });
+
+  const moveTask = (fromIndex, toIndex, fromStatus, toStatus) => {
+    setTasks((prevTasks) => {
+      const updatedTasks = [...prevTasks];
+      const [movedTask] = updatedTasks.splice(
+        prevTasks.findIndex((t) => t.id === tasks[fromIndex].id),
+        1
+      );
+      movedTask.status = toStatus;
+      updatedTasks.splice(toIndex, 0, movedTask);
+      return updatedTasks;
+    });
+  };
+
   const handleRemove = (id) => {
     const fTasks = tasks.filter(t => t.id !== id)
     localStorage.setItem("tasks", JSON.stringify(fTasks))
     setTasks(fTasks)
-    toast("Task removed", {icon: <FcCancel/>})
+    toast("Task removed", { icon: <FcCancel /> })
   };
+
+  const taskTextStyle =
+    task.status === "closed" ? "line-through text-gray-500" : "text-white";
+
+
   return (
-    <div ref={drag} className={`p-4 mt-8 shadow-md rounded-md relative ${isDragging ? "opacity-25" : "opacity-100"} cursor-grab`}>
-      <p>{task.name}</p>
-      <button onClick={() => handleRemove(task.id)}
-        className='absolute bottom-4 right-1 text-slate-600'><IoIosRemoveCircleOutline /></button>
+    <div
+      ref={(node) => drag(drop(node))}
+      className={`p-4 flex items-center justify-between mt-6 shadow-2xl border-gray-400 border-[2px] rounded-md relative ${isDragging ? "opacity-25" : "opacity-100"
+        } cursor-grab ${isOver ? "bg-gray-100" : ""} ${bg}`}
+    >
+      <p className={`${taskTextStyle} text-2xl`}>{task.name}</p>
+      {task.status === "closed" ? (
+        <button
+          onClick={() => handleRemove(task.id)}
+          className="bottom-4 text-white transition-all duration-200 delay-100 font-bold ease-out border-[2px] border-white rounded-lg p-1 hover:bg-white hover:text-black"
+        >
+          Delete
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -31,7 +31,7 @@ function CreateTask({ tasks, setTasks }) {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex items-center flex-col gap-2 sm:gap-0 sm:flex-row">
             <input
                 value={task.name}
                 type='text'

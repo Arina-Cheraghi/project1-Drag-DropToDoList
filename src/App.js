@@ -10,7 +10,7 @@ function App() {
 
   useEffect(() => {
     const storedTasks = JSON.parse(localStorage.getItem("tasks"));
-    setTasks(storedTasks || []); // اطمینان از اینکه tasks همیشه یک آرایه است
+    setTasks(storedTasks || []); 
   }, []);
 
   return (
